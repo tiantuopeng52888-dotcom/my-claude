@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nova 内容管理系统</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #0a0404;
+      --surface:  #110707;
+      --surface2: #1a0a0a;
+      --border:   #2a1313;
+      --border2:  #3a1a1a;
+      --text:     #f0e6e6;
+      --muted:    #8a7373;
+      --red:      #dc2626;
+      --red-dark: #991b1b;
+      --gold:     #f59e0b;
+      --white:    #ffffff;
+      --sidebar:  200px;
+      --header:   60px;
+      --radius:   10px;
+    }
+    html, body { height: 100%; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; }
+    a { color: inherit; text-decoration: none; }
+    input, textarea, select { font-family: inherit; font-size: 13px; }
+
+    /* ── Login ── */
+    #loginScreen {
+      position: fixed; inset: 0; z-index: 999;
+      background: var(--bg);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .login-card {
+      width: 380px; padding: 48px 40px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      text-align: center;
+    }
+    .login-logo {
+      display: inline-flex; align-items: center; gap: 10px;
+      font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 8px;
+    }
+    .login-logo-mark {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--red), var(--gold));
+      border-radius: 8px; display: grid; place-items: center;
+      font-size: 18px; font-weight: 800; color: white;
+    }
+    .login-sub { font-size: 13px; color: var(--muted); margin-bottom: 36px; }
+    .login-label { display: block; text-align: left; font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 6px; }
+    .login-input {
+      width: 100%; padding: 11px 14px;
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 8px; color: var(--text); outline: none;
+      transition: border-color 0.2s;
+    }
+    .login-input:focus { border-color: var(--red); }
+    .login-btn {
+      width: 100%; margin-top: 16px; padding: 12px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: white; border: none; border-radius: 8px;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+    }
+    .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+    .login-error { color: #f87171; font-size: 12px; margin-top: 10px; display: none; }
+    .login-hint { font-size: 11px; color: var(--border2); margin-top: 24px; }
+    .login-hint span { color: var(--muted); }
+
+    /* ── App Shell ── */
+    #cmsApp { display: none; height: 100vh; overflow: hidden; }
+    .app { display: flex; height: 100%; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar); flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 20px 16px 16px;
+      display: flex; align-items: center; gap: 8px;
+      font-size: 16px; font-weight: 800; color: var(--white);
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo-mark {
+      width: 28px; height: 28px;
+      background: linear-gradient(135deg, var(--red), var(--gold));
+      border-radius: 6px; display: grid; place-items: center;
+      font-size: 13px; font-weight: 800; color: white; flex-shrink: 0;
+    }
+    .sidebar-logo-sub { font-size: 10px; font-weight: 400; color: var(--muted); display: block; line-height: 1; }
+    .nav-group { padding: 12px 8px 4px; }
+    .nav-group-label { font-size: 10px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; padding: 0 8px; margin-bottom: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 7px; cursor: pointer;
+      color: var(--muted); font-size: 13px; font-weight: 500;
+      transition: all 0.15s; margin-bottom: 1px;
+    }
+    .nav-item:hover { background: var(--surface2); color: var(--text); }
+    .nav-item.active { background: rgba(220,38,38,0.12); color: var(--red); font-weight: 600; }
+    .nav-icon { font-size: 14px; width: 18px; text-align: center; flex-shrink: 0; }
+    .sidebar-footer {
+      margin-top: auto; padding: 12px 8px;
+      border-top: 1px solid var(--border);
+    }
+    .logout-btn {
+      width: 100%; padding: 8px 10px; border-radius: 7px;
+      background: none; border: none; cursor: pointer;
+      color: var(--muted); font-size: 13px; font-weight: 500;
+      display: flex; align-items: center; gap: 8px;
+      transition: all 0.15s;
+    }
+    .logout-btn:hover { color: #f87171; background: rgba(220,38,38,0.08); }
+
+    /* ── Main ── */
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .cms-header {
+      height: var(--header); flex-shrink: 0;
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+    }
+    .cms-header-left { display: flex; align-items: center; gap: 12px; }
+    .cms-header-title { font-size: 16px; font-weight: 700; color: var(--white); }
+    .cms-header-desc { font-size: 12px; color: var(--muted); }
+    .header-actions { display: flex; align-items: center; gap: 8px; }
+    .hbtn {
+      padding: 7px 14px; border-radius: 7px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      border: none; transition: all 0.15s;
+    }
+    .hbtn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border2);
+    }
+    .hbtn-ghost:hover { color: var(--text); border-color: var(--muted); }
+    .hbtn-primary {
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: white;
+    }
+    .hbtn-primary:hover { opacity: 0.85; }
+
+    .cms-body { flex: 1; overflow-y: auto; padding: 28px; }
+
+    /* ── Section ── */
+    .cms-section { display: none; max-width: 860px; }
+    .cms-section.active { display: block; }
+
+    /* ── Dashboard ── */
+    .dash-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
+    .dash-card {
+      padding: 20px; background: var(--surface);
+      border: 1px solid var(--border); border-radius: var(--radius);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .dash-card:hover { border-color: var(--red); transform: translateY(-2px); }
+    .dash-card-icon { font-size: 22px; margin-bottom: 10px; }
+    .dash-card-title { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .dash-card-sub { font-size: 12px; color: var(--muted); }
+    .dash-info {
+      padding: 16px 20px;
+      background: rgba(220,38,38,0.06);
+      border: 1px solid rgba(220,38,38,0.2);
+      border-radius: var(--radius);
+      font-size: 13px; color: var(--muted); line-height: 1.7;
+    }
+    .dash-info strong { color: var(--gold); }
+
+    /* ── Form Cards ── */
+    .form-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; margin-bottom: 20px;
+    }
+    .form-card-title {
+      font-size: 14px; font-weight: 700; color: var(--white);
+      margin-bottom: 4px; display: flex; align-items: center; gap: 8px;
+    }
+    .form-card-title::before {
+      content: ''; width: 3px; height: 16px;
+      background: var(--red); border-radius: 2px; flex-shrink: 0;
+    }
+    .form-card-sub { font-size: 12px; color: var(--muted); margin-bottom: 20px; padding-left: 11px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-grid.cols-1 { grid-template-columns: 1fr; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-group { display: flex; flex-direction: column; gap: 5px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    input[type="text"], input[type="email"], input[type="tel"], input[type="number"], textarea, select {
+      background: var(--bg); border: 1px solid var(--border2);
+      border-radius: 7px; padding: 9px 12px; color: var(--text);
+      outline: none; transition: border-color 0.2s; resize: vertical;
+      width: 100%;
+    }
+    input:focus, textarea:focus, select:focus { border-color: var(--red); }
+    textarea { min-height: 80px; line-height: 1.6; }
+    .small-input { max-width: 80px; }
+
+    /* Repeater cards (services, testimonials, work) */
+    .repeater-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .repeater-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px;
+    }
+    .repeater-item-header {
+      font-size: 12px; font-weight: 700; color: var(--gold);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+    }
+    .repeater-item-header span {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: rgba(245,158,11,0.15); display: grid; place-items: center;
+      font-size: 10px; font-weight: 800;
+    }
+    .ri-fields { display: flex; flex-direction: column; gap: 10px; }
+
+    /* Save row */
+    .save-row {
+      display: flex; align-items: center; gap: 12px; margin-top: 20px;
+    }
+    .save-btn {
+      padding: 10px 24px; border-radius: 8px;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      color: white; font-size: 13px; font-weight: 700;
+      border: none; cursor: pointer; transition: all 0.15s;
+    }
+    .save-btn:hover { opacity: 0.85; transform: translateY(-1px); }
+    .save-msg { font-size: 12px; color: #4ade80; display: none; }
+    .reset-link { font-size: 12px; color: var(--muted); cursor: pointer; margin-left: auto; }
+    .reset-link:hover { color: #f87171; }
+
+    /* Saved indicator */
+    .save-msg.visible { display: inline; }
+  </style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-mark">N</div>
+      <div>
+        <div>Nova</div>
+        <span class="sidebar-logo-sub">内容管理系统</span>
+      </div>
+    </div>
+    <p class="login-sub">请输入管理员密码以继续</p>
+    <label class="login-label" for="pwdInput">管理员密码</label>
+    <input class="login-input" id="pwdInput" type="password" placeholder="••••••••" autocomplete="current-password" />
+    <button class="login-btn" id="loginBtn">登录</button>
+    <div class="login-error" id="loginError">密码错误，请重试</div>
+    <p class="login-hint">提示：密码为 <span>nova2026</span></p>
+  </div>
+</div>
+
+<!-- ===== CMS APP ===== -->
+<div id="cmsApp">
+  <div class="app">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-mark">N</div>
+        <div>
+          <div>Nova CMS</div>
+          <span class="sidebar-logo-sub">内容管理后台</span>
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">概览</div>
+        <div class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">🏠</span> 仪表盘
+        </div>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-group-label">页面内容</div>
+        <div class="nav-item" data-section="nav">
+          <span class="nav-icon">🔤</span> 导航栏
+        </div>
+        <div class="nav-item" data-section="hero">
+          <span class="nav-icon">🎯</span> 首页横幅
+        </div>
+        <div class="nav-item" data-section="about">
+          <span class="nav-icon">👥</span> 关于我们
+        </div>
+        <div class="nav-item" data-section="services">
+          <span class="nav-icon">🔧</span> 服务项目
+        </div>
+        <div class="nav-item" data-section="work">
+          <span class="nav-icon">🎨</span> 精选案例
+        </div>
+        <div class="nav-item" data-section="testimonials">
+          <span class="nav-icon">⭐</span> 客户口碑
+        </div>
+        <div class="nav-item" data-section="cta">
+          <span class="nav-icon">📢</span> CTA 区域
+        </div>
+        <div class="nav-item" data-section="contact">
+          <span class="nav-icon">📞</span> 联系方式
+        </div>
+        <div class="nav-item" data-section="footer">
+          <span class="nav-icon">🦶</span> 页脚设置
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn" id="logoutBtn">
+          <span class="nav-icon">🚪</span> 退出登录
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <div class="main">
+      <header class="cms-header">
+        <div class="cms-header-left">
+          <div>
+            <div class="cms-header-title" id="headerTitle">仪表盘</div>
+            <div class="cms-header-desc" id="headerDesc">内容总览与快速操作</div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <button class="hbtn hbtn-ghost" onclick="resetAll()">重置全部内容</button>
+          <button class="hbtn hbtn-primary" onclick="window.open('index.html','_blank')">预览网站 →</button>
+        </div>
+      </header>
+
+      <div class="cms-body">
+
+        <!-- DASHBOARD -->
+        <div class="cms-section active" id="section-dashboard">
+          <div class="dash-grid">
+            <div class="dash-card" onclick="showSection('hero')">
+              <div class="dash-card-icon">🎯</div>
+              <div class="dash-card-title">首页横幅</div>
+              <div class="dash-card-sub">Badge、标题、副标题、统计数据</div>
+            </div>
+            <div class="dash-card" onclick="showSection('services')">
+              <div class="dash-card-icon">🔧</div>
+              <div class="dash-card-title">服务项目</div>
+              <div class="dash-card-sub">6 个服务卡片内容</div>
+            </div>
+            <div class="dash-card" onclick="showSection('testimonials')">
+              <div class="dash-card-icon">⭐</div>
+              <div class="dash-card-title">客户口碑</div>
+              <div class="dash-card-sub">3 条客户评价</div>
+            </div>
+            <div class="dash-card" onclick="showSection('work')">
+              <div class="dash-card-icon">🎨</div>
+              <div class="dash-card-title">精选案例</div>
+              <div class="dash-card-sub">3 个作品展示</div>
+            </div>
+            <div class="dash-card" onclick="showSection('contact')">
+              <div class="dash-card-icon">📞</div>
+              <div class="dash-card-title">联系方式</div>
+              <div class="dash-card-sub">邮箱、电话、地址</div>
+            </div>
+            <div class="dash-card" onclick="showSection('footer')">
+              <div class="dash-card-icon">🦶</div>
+              <div class="dash-card-title">页脚设置</div>
+              <div class="dash-card-sub">口号、版权年份</div>
+            </div>
+          </div>
+          <div class="dash-info">
+            💡 <strong>使用说明：</strong>在左侧菜单选择要编辑的内容区块，修改后点击 <strong>「保存」</strong> 按钮。内容保存在浏览器本地，刷新 <strong>「预览网站」</strong> 即可看到变化。如需恢复默认内容，点击右上角 <strong>「重置全部内容」</strong>。
+          </div>
+        </div>
+
+        <!-- NAV -->
+        <div class="cms-section" id="section-nav">
+          <div class="form-card">
+            <div class="form-card-title">导航栏设置</div>
+            <div class="form-card-sub">品牌名称与 Logo 标记</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>品牌名称</label>
+                <input type="text" id="nav-logo" placeholder="Nova" />
+              </div>
+              <div class="form-group">
+                <label>Logo 标记字母</label>
+                <input type="text" id="nav-logoMark" placeholder="N" maxlength="2" />
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('nav')">保存导航栏</button>
+              <span class="save-msg" id="save-nav">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- HERO -->
+        <div class="cms-section" id="section-hero">
+          <div class="form-card">
+            <div class="form-card-title">顶部徽章与主标题</div>
+            <div class="form-card-sub">首屏最显眼的区域</div>
+            <div class="form-grid cols-1">
+              <div class="form-group">
+                <label>徽章文字（Badge）</label>
+                <input type="text" id="hero-badge" placeholder="🎊 马年大吉 · 2026 新春纳福" />
+              </div>
+              <div class="form-group">
+                <label>主标题第一行</label>
+                <input type="text" id="hero-headline1" placeholder="用设计的力量" />
+              </div>
+              <div class="form-group">
+                <label>主标题第二行（渐变高亮）</label>
+                <input type="text" id="hero-headline2" placeholder="重塑你的品牌" />
+              </div>
+              <div class="form-group">
+                <label>副标题说明文字</label>
+                <textarea id="hero-sub" rows="2"></textarea>
+              </div>
+            </div>
+            <div class="form-grid" style="margin-top:14px">
+              <div class="form-group">
+                <label>按钮一文字</label>
+                <input type="text" id="hero-cta1" placeholder="开始合作" />
+              </div>
+              <div class="form-group">
+                <label>按钮二文字</label>
+                <input type="text" id="hero-cta2" placeholder="查看案例 →" />
+              </div>
+            </div>
+          </div>
+
+          <div class="form-card">
+            <div class="form-card-title">数据统计</div>
+            <div class="form-card-sub">首屏底部三个数字卡片</div>
+            <div class="form-grid cols-3">
+              <div class="form-group">
+                <label>统计一 数字</label>
+                <input type="number" id="hero-stat1Num" placeholder="200" />
+              </div>
+              <div class="form-group">
+                <label>统计一 单位/标签</label>
+                <input type="text" id="hero-stat1Sym" placeholder="+" />
+              </div>
+              <div class="form-group">
+                <label>统计一 说明</label>
+                <input type="text" id="hero-stat1Label" placeholder="品牌客户" />
+              </div>
+              <div class="form-group">
+                <label>统计二 数字</label>
+                <input type="number" id="hero-stat2Num" placeholder="98" />
+              </div>
+              <div class="form-group">
+                <label>统计二 单位/标签</label>
+                <input type="text" id="hero-stat2Sym" placeholder="%" />
+              </div>
+              <div class="form-group">
+                <label>统计二 说明</label>
+                <input type="text" id="hero-stat2Label" placeholder="客户满意率" />
+              </div>
+              <div class="form-group">
+                <label>统计三 数字</label>
+                <input type="number" id="hero-stat3Num" placeholder="8" />
+              </div>
+              <div class="form-group">
+                <label>统计三 单位/标签</label>
+                <input type="text" id="hero-stat3Sym" placeholder="年" />
+              </div>
+              <div class="form-group">
+                <label>统计三 说明</label>
+                <input type="text" id="hero-stat3Label" placeholder="行业经验" />
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('hero')">保存首页横幅</button>
+              <span class="save-msg" id="save-hero">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ABOUT -->
+        <div class="cms-section" id="section-about">
+          <div class="form-card">
+            <div class="form-card-title">关于我们</div>
+            <div class="form-card-sub">公司介绍区域内容</div>
+            <div class="form-grid cols-1">
+              <div class="form-group">
+                <label>卡片标题</label>
+                <input type="text" id="about-cardTitle" />
+              </div>
+              <div class="form-group">
+                <label>卡片说明</label>
+                <input type="text" id="about-cardText" />
+              </div>
+              <div class="form-group">
+                <label>突出年数（数字）</label>
+                <input type="number" id="about-years" style="max-width:120px" />
+              </div>
+              <div class="form-group">
+                <label>章节标题第一行</label>
+                <input type="text" id="about-title1" />
+              </div>
+              <div class="form-group">
+                <label>章节标题高亮词</label>
+                <input type="text" id="about-title2" />
+              </div>
+              <div class="form-group">
+                <label>正文第一段</label>
+                <textarea id="about-body1" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label>正文第二段</label>
+                <textarea id="about-body2" rows="3"></textarea>
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('about')">保存关于我们</button>
+              <span class="save-msg" id="save-about">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SERVICES -->
+        <div class="cms-section" id="section-services">
+          <div class="form-card">
+            <div class="form-card-title">服务项目</div>
+            <div class="form-card-sub">6 个服务卡片</div>
+            <div class="repeater-grid" id="services-repeater"></div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('services')">保存服务项目</button>
+              <span class="save-msg" id="save-services">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- WORK -->
+        <div class="cms-section" id="section-work">
+          <div class="form-card">
+            <div class="form-card-title">精选案例</div>
+            <div class="form-card-sub">3 个作品展示卡片</div>
+            <div id="work-repeater" style="display:flex;flex-direction:column;gap:14px;"></div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('work')">保存精选案例</button>
+              <span class="save-msg" id="save-work">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- TESTIMONIALS -->
+        <div class="cms-section" id="section-testimonials">
+          <div class="form-card">
+            <div class="form-card-title">客户口碑</div>
+            <div class="form-card-sub">3 条客户评价</div>
+            <div id="testimonials-repeater" style="display:flex;flex-direction:column;gap:14px;"></div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('testimonials')">保存客户口碑</button>
+              <span class="save-msg" id="save-testimonials">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CTA -->
+        <div class="cms-section" id="section-cta">
+          <div class="form-card">
+            <div class="form-card-title">CTA 号召区域</div>
+            <div class="form-card-sub">页面中间的深色召唤区块</div>
+            <div class="form-grid cols-1">
+              <div class="form-group">
+                <label>大标题</label>
+                <input type="text" id="cta-title" />
+              </div>
+              <div class="form-group">
+                <label>副标题</label>
+                <input type="text" id="cta-sub" />
+              </div>
+              <div class="form-group">
+                <label>按钮文字</label>
+                <input type="text" id="cta-btn" />
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('cta')">保存 CTA 区域</button>
+              <span class="save-msg" id="save-cta">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CONTACT -->
+        <div class="cms-section" id="section-contact">
+          <div class="form-card">
+            <div class="form-card-title">联系方式</div>
+            <div class="form-card-sub">联系区域显示的信息</div>
+            <div class="form-grid cols-1">
+              <div class="form-group">
+                <label>联系标题</label>
+                <input type="text" id="contact-title" />
+              </div>
+              <div class="form-group">
+                <label>联系说明</label>
+                <textarea id="contact-sub" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>电子邮箱</label>
+                <input type="email" id="contact-email" />
+              </div>
+              <div class="form-group">
+                <label>联系电话</label>
+                <input type="tel" id="contact-phone" />
+              </div>
+              <div class="form-group">
+                <label>办公地址</label>
+                <input type="text" id="contact-address" />
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('contact')">保存联系方式</button>
+              <span class="save-msg" id="save-contact">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- FOOTER -->
+        <div class="cms-section" id="section-footer">
+          <div class="form-card">
+            <div class="form-card-title">页脚设置</div>
+            <div class="form-card-sub">底部页脚文字与版权信息</div>
+            <div class="form-grid cols-1">
+              <div class="form-group">
+                <label>品牌口号（支持 &lt;br/&gt; 换行）</label>
+                <textarea id="footer-tagline" rows="2"></textarea>
+              </div>
+              <div class="form-group">
+                <label>版权年份</label>
+                <input type="text" id="footer-year" style="max-width:120px" />
+              </div>
+              <div class="form-group">
+                <label>版权主体名称</label>
+                <input type="text" id="footer-company" />
+              </div>
+            </div>
+            <div class="save-row">
+              <button class="save-btn" onclick="saveSection('footer')">保存页脚设置</button>
+              <span class="save-msg" id="save-footer">✓ 已保存</span>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /cms-body -->
+    </div><!-- /main -->
+  </div><!-- /app -->
+</div><!-- /cmsApp -->
+
+<script>
+'use strict';
+
+/* ── Constants ── */
+const STORAGE_KEY = 'nova_cms';
+const AUTH_KEY    = 'nova_cms_auth';
+const PASSWORD    = 'nova2026';
+
+/* ── Default Content ── */
+const DEFAULT = {
+  nav: { logo: 'Nova', logoMark: 'N' },
+  hero: {
+    badge: '🎊 马年大吉 · 2026 新春纳福',
+    headline1: '用设计的力量',
+    headline2: '重塑你的品牌',
+    sub: '我们是一家专注于品牌战略与视觉创新的设计公司，帮助企业建立独特的品牌识别，赢得市场信任。',
+    cta1: '开始合作', cta2: '查看案例 →',
+    stat1Num: 200, stat1Sym: '+', stat1Label: '品牌客户',
+    stat2Num: 98,  stat2Sym: '%', stat2Label: '客户满意率',
+    stat3Num: 8,   stat3Sym: '年', stat3Label: '行业经验',
+  },
+  about: {
+    cardTitle: '以人为本的设计哲学',
+    cardText:  '每一个像素背后，都是对用户体验的深刻理解。',
+    years: 8,
+    title1: '我们不只做设计，',
+    title2: '品牌生命力',
+    body1: 'Nova 成立于 2017 年，由一群热爱设计与战略的创作者共同创立。我们深信，卓越的品牌不仅仅是美观的视觉——它是情感、故事与价值观的集合体。',
+    body2: '从初创公司到跨国集团，我们为每一位客户提供量身定制的品牌解决方案，让品牌在竞争激烈的市场中脱颖而出。',
+  },
+  services: [
+    { icon: '◈', title: '品牌战略', desc: '深入市场研究，为品牌制定清晰的定位策略和长期发展路线图。' },
+    { icon: '◉', title: '视觉识别', desc: 'Logo 设计、色彩体系、字体规范，打造一致且令人难忘的视觉语言。' },
+    { icon: '◆', title: '数字设计', desc: '网站、App、社交媒体，为每一个数字触点创造卓越的用户体验。' },
+    { icon: '◇', title: '内容营销', desc: '品牌故事、文案创作、视频内容，让品牌声音触达目标受众的内心。' },
+    { icon: '○', title: '包装设计', desc: '将品牌价值转化为可触摸的产品体验，从货架上的第一眼就赢得消费者。' },
+    { icon: '□', title: '品牌咨询', desc: '专业顾问团队，陪伴企业在品牌建设道路上做出正确决策。' },
+  ],
+  work: [
+    { tag: '品牌重塑', title: 'TechVision 科技品牌升级', desc: '从传统科技公司到前沿创新品牌的全面蜕变' },
+    { tag: '视觉识别', title: 'BrightCo 品牌系统',       desc: '构建完整的视觉识别体系' },
+    { tag: '数字体验', title: 'Luminary 官网设计',        desc: '沉浸式品牌数字体验' },
+  ],
+  testimonials: [
+    { text: 'Nova 团队对品牌的理解超出了我们的期望。他们不仅仅交付了美丽的设计，更为我们的品牌注入了灵魂。自从品牌升级后，我们的市场认知度提升了近 60%。', author: '李明远', role: 'CEO, TechVision', initial: 'L' },
+    { text: '专业、高效、富有创造力。Nova 在极短的时间内就抓住了我们品牌的精髓，交付质量令人印象深刻。', author: 'Sarah Chen', role: 'CMO, BrightCo', initial: 'S' },
+    { text: '与 Nova 合作是我们做过的最正确的投资之一。他们的战略眼光和执行力都是一流的。', author: '王芳', role: '创始人, Luminary', initial: 'W' },
+  ],
+  cta:     { title: '准备好开始了吗？', sub: '让我们一起打造让世界记住的品牌。', btn: '免费咨询' },
+  contact: { title: '让我们开始对话', sub: '无论您是初创公司还是成熟企业，我们都很乐意了解您的品牌故事，并探讨如何帮助您实现目标。', email: 'hello@novabrand.com', phone: '+86 010-8888-8888', address: '北京市朝阳区创意大厦 18 层' },
+  footer:  { tagline: '用设计重塑世界，<br/>用品牌连接未来。', year: '2026', company: 'Nova Brand' },
+};
+
+/* ── Helpers ── */
+function getContent() {
+  const s = localStorage.getItem(STORAGE_KEY);
+  return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT));
+}
+function saveContent(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+const $ = id => document.getElementById(id);
+const val = id => { const el = $(id); return el ? el.value.trim() : ''; };
+const setVal = (id, v) => { const el = $(id); if (el && v !== undefined && v !== null) el.value = v; };
+
+/* ── Auth ── */
+function isLoggedIn() { return sessionStorage.getItem(AUTH_KEY) === '1'; }
+
+$('loginBtn').addEventListener('click', doLogin);
+$('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogin() {
+  const pw = $('pwdInput').value;
+  if (pw === PASSWORD) {
+    sessionStorage.setItem(AUTH_KEY, '1');
+    $('loginScreen').style.display = 'none';
+    $('cmsApp').style.display = 'block';
+    initCMS();
+  } else {
+    $('loginError').style.display = 'block';
+    $('pwdInput').value = '';
+    $('pwdInput').focus();
+  }
+}
+
+$('logoutBtn').addEventListener('click', () => {
+  sessionStorage.removeItem(AUTH_KEY);
+  location.reload();
+});
+
+/* ── Navigation ── */
+const SECTION_META = {
+  dashboard:    { title: '仪表盘',   desc: '内容总览与快速操作' },
+  nav:          { title: '导航栏',   desc: '品牌名称与标识设置' },
+  hero:         { title: '首页横幅', desc: 'Hero 区域全部文字内容' },
+  about:        { title: '关于我们', desc: '公司介绍文字' },
+  services:     { title: '服务项目', desc: '6 个服务卡片' },
+  work:         { title: '精选案例', desc: '3 个作品展示' },
+  testimonials: { title: '客户口碑', desc: '3 条评价' },
+  cta:          { title: 'CTA 区域', desc: '号召行动区块' },
+  contact:      { title: '联系方式', desc: '邮箱、电话、地址' },
+  footer:       { title: '页脚设置', desc: '口号与版权信息' },
+};
+
+function showSection(id) {
+  document.querySelectorAll('.cms-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const sec = document.getElementById('section-' + id);
+  if (sec) sec.classList.add('active');
+  const nav = document.querySelector(`.nav-item[data-section="${id}"]`);
+  if (nav) nav.classList.add('active');
+  const meta = SECTION_META[id] || {};
+  $('headerTitle').textContent = meta.title || id;
+  $('headerDesc').textContent  = meta.desc  || '';
+}
+
+document.querySelectorAll('.nav-item').forEach(el => {
+  el.addEventListener('click', () => showSection(el.dataset.section));
+});
+
+/* ── Build dynamic repeaters ── */
+function buildServicesRepeater(services) {
+  const container = $('services-repeater');
+  container.innerHTML = services.map((s, i) => `
+    <div class="repeater-item">
+      <div class="repeater-item-header"><span>${i+1}</span> 服务 ${i+1}</div>
+      <div class="ri-fields">
+        <div class="form-group"><label>图标符号</label>
+          <input type="text" id="svc-icon-${i}" value="${s.icon}" maxlength="4" /></div>
+        <div class="form-group"><label>标题</label>
+          <input type="text" id="svc-title-${i}" value="${s.title}" /></div>
+        <div class="form-group"><label>描述</label>
+          <textarea id="svc-desc-${i}" rows="3">${s.desc}</textarea></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildWorkRepeater(work) {
+  const container = $('work-repeater');
+  container.innerHTML = work.map((w, i) => `
+    <div class="repeater-item">
+      <div class="repeater-item-header"><span>${i+1}</span> 案例 ${i+1}</div>
+      <div class="ri-fields">
+        <div class="form-group"><label>标签</label>
+          <input type="text" id="work-tag-${i}" value="${w.tag}" /></div>
+        <div class="form-group"><label>标题</label>
+          <input type="text" id="work-title-${i}" value="${w.title}" /></div>
+        <div class="form-group"><label>描述</label>
+          <input type="text" id="work-desc-${i}" value="${w.desc}" /></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function buildTestimonialsRepeater(testimonials) {
+  const container = $('testimonials-repeater');
+  container.innerHTML = testimonials.map((t, i) => `
+    <div class="repeater-item">
+      <div class="repeater-item-header"><span>${i+1}</span> 评价 ${i+1}</div>
+      <div class="ri-fields">
+        <div class="form-group"><label>评价内容</label>
+          <textarea id="testi-text-${i}" rows="4">${t.text}</textarea></div>
+        <div class="form-grid" style="gap:10px">
+          <div class="form-group"><label>姓名</label>
+            <input type="text" id="testi-author-${i}" value="${t.author}" /></div>
+          <div class="form-group"><label>职位/公司</label>
+            <input type="text" id="testi-role-${i}" value="${t.role}" /></div>
+          <div class="form-group"><label>头像字母</label>
+            <input type="text" id="testi-initial-${i}" value="${t.initial}" maxlength="2" /></div>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── Populate all forms ── */
+function populateForms(c) {
+  // Nav
+  setVal('nav-logo', c.nav.logo);
+  setVal('nav-logoMark', c.nav.logoMark);
+  // Hero
+  setVal('hero-badge', c.hero.badge);
+  setVal('hero-headline1', c.hero.headline1);
+  setVal('hero-headline2', c.hero.headline2);
+  setVal('hero-sub', c.hero.sub);
+  setVal('hero-cta1', c.hero.cta1);
+  setVal('hero-cta2', c.hero.cta2);
+  setVal('hero-stat1Num',   c.hero.stat1Num);
+  setVal('hero-stat1Sym',   c.hero.stat1Sym);
+  setVal('hero-stat1Label', c.hero.stat1Label);
+  setVal('hero-stat2Num',   c.hero.stat2Num);
+  setVal('hero-stat2Sym',   c.hero.stat2Sym);
+  setVal('hero-stat2Label', c.hero.stat2Label);
+  setVal('hero-stat3Num',   c.hero.stat3Num);
+  setVal('hero-stat3Sym',   c.hero.stat3Sym);
+  setVal('hero-stat3Label', c.hero.stat3Label);
+  // About
+  setVal('about-cardTitle', c.about.cardTitle);
+  setVal('about-cardText',  c.about.cardText);
+  setVal('about-years',     c.about.years);
+  setVal('about-title1',    c.about.title1);
+  setVal('about-title2',    c.about.title2);
+  setVal('about-body1',     c.about.body1);
+  setVal('about-body2',     c.about.body2);
+  // Services repeater
+  buildServicesRepeater(c.services);
+  // Work repeater
+  buildWorkRepeater(c.work);
+  // Testimonials repeater
+  buildTestimonialsRepeater(c.testimonials);
+  // CTA
+  setVal('cta-title', c.cta.title);
+  setVal('cta-sub',   c.cta.sub);
+  setVal('cta-btn',   c.cta.btn);
+  // Contact
+  setVal('contact-title',   c.contact.title);
+  setVal('contact-sub',     c.contact.sub);
+  setVal('contact-email',   c.contact.email);
+  setVal('contact-phone',   c.contact.phone);
+  setVal('contact-address', c.contact.address);
+  // Footer
+  setVal('footer-tagline', c.footer.tagline);
+  setVal('footer-year',    c.footer.year);
+  setVal('footer-company', c.footer.company);
+}
+
+/* ── Section save functions ── */
+function saveSection(section) {
+  const c = getContent();
+  switch (section) {
+    case 'nav':
+      c.nav.logo = val('nav-logo');
+      c.nav.logoMark = val('nav-logoMark');
+      break;
+    case 'hero':
+      c.hero.badge      = val('hero-badge');
+      c.hero.headline1  = val('hero-headline1');
+      c.hero.headline2  = val('hero-headline2');
+      c.hero.sub        = val('hero-sub');
+      c.hero.cta1       = val('hero-cta1');
+      c.hero.cta2       = val('hero-cta2');
+      c.hero.stat1Num   = parseInt(val('hero-stat1Num')) || 0;
+      c.hero.stat1Sym   = val('hero-stat1Sym');
+      c.hero.stat1Label = val('hero-stat1Label');
+      c.hero.stat2Num   = parseInt(val('hero-stat2Num')) || 0;
+      c.hero.stat2Sym   = val('hero-stat2Sym');
+      c.hero.stat2Label = val('hero-stat2Label');
+      c.hero.stat3Num   = parseInt(val('hero-stat3Num')) || 0;
+      c.hero.stat3Sym   = val('hero-stat3Sym');
+      c.hero.stat3Label = val('hero-stat3Label');
+      break;
+    case 'about':
+      c.about.cardTitle = val('about-cardTitle');
+      c.about.cardText  = val('about-cardText');
+      c.about.years     = parseInt(val('about-years')) || 8;
+      c.about.title1    = val('about-title1');
+      c.about.title2    = val('about-title2');
+      c.about.body1     = val('about-body1');
+      c.about.body2     = val('about-body2');
+      break;
+    case 'services':
+      c.services = c.services.map((_, i) => ({
+        icon:  document.getElementById(`svc-icon-${i}`)?.value.trim()  || '',
+        title: document.getElementById(`svc-title-${i}`)?.value.trim() || '',
+        desc:  document.getElementById(`svc-desc-${i}`)?.value.trim()  || '',
+      }));
+      break;
+    case 'work':
+      c.work = c.work.map((_, i) => ({
+        tag:   document.getElementById(`work-tag-${i}`)?.value.trim()   || '',
+        title: document.getElementById(`work-title-${i}`)?.value.trim() || '',
+        desc:  document.getElementById(`work-desc-${i}`)?.value.trim()  || '',
+      }));
+      break;
+    case 'testimonials':
+      c.testimonials = c.testimonials.map((_, i) => ({
+        text:    document.getElementById(`testi-text-${i}`)?.value.trim()    || '',
+        author:  document.getElementById(`testi-author-${i}`)?.value.trim()  || '',
+        role:    document.getElementById(`testi-role-${i}`)?.value.trim()    || '',
+        initial: document.getElementById(`testi-initial-${i}`)?.value.trim() || '',
+      }));
+      break;
+    case 'cta':
+      c.cta.title = val('cta-title');
+      c.cta.sub   = val('cta-sub');
+      c.cta.btn   = val('cta-btn');
+      break;
+    case 'contact':
+      c.contact.title   = val('contact-title');
+      c.contact.sub     = val('contact-sub');
+      c.contact.email   = val('contact-email');
+      c.contact.phone   = val('contact-phone');
+      c.contact.address = val('contact-address');
+      break;
+    case 'footer':
+      c.footer.tagline = val('footer-tagline');
+      c.footer.year    = val('footer-year');
+      c.footer.company = val('footer-company');
+      break;
+  }
+  saveContent(c);
+  flashSaved(section);
+}
+
+function flashSaved(section) {
+  const el = document.getElementById('save-' + section);
+  if (!el) return;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 2500);
+}
+
+/* ── Reset all ── */
+function resetAll() {
+  if (!confirm('确定要重置所有内容为默认值吗？此操作不可撤销。')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  populateForms(JSON.parse(JSON.stringify(DEFAULT)));
+  alert('内容已重置为默认值，刷新预览网站即可生效。');
+}
+
+/* ── Init ── */
+function initCMS() {
+  const content = getContent();
+  populateForms(content);
+}
+
+/* ── Boot ── */
+if (isLoggedIn()) {
+  $('loginScreen').style.display = 'none';
+  $('cmsApp').style.display = 'block';
+  initCMS();
+}
+</script>
+</body>
+</html>

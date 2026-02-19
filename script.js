@@ -106,6 +106,16 @@ const SUPABASE_KEY = 'sb_publishable_QmyBWeu-VWKoGxjyzjNxtg_6XHzO13_';
         if (tag)   tag.textContent   = w.tag;
         if (title) title.textContent = w.title;
         if (desc)  desc.textContent  = w.desc;
+        if (w.image) {
+          const bg = el.querySelector('.work-item__bg');
+          if (bg) {
+            bg.style.backgroundImage = `url('${w.image}')`;
+            bg.style.backgroundSize = 'cover';
+            bg.style.backgroundPosition = 'center';
+            const shapes = bg.querySelector('.work-shapes');
+            if (shapes) shapes.style.display = 'none';
+          }
+        }
       });
     }
 

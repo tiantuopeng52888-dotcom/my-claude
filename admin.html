@@ -760,7 +760,12 @@ async function loadContent() {
   } catch { /* 网络异常，降级 */ }
   // 降级到 localStorage
   const cached = localStorage.getItem(STORAGE_KEY);
-  if (cached) { try { return JSON.parse(cached); } catch {} }
+  if (cached) {
+    try {
+      const parsed = JSON.parse(cached);
+      if (Object.keys(parsed).length > 0) return parsed; // 忽略空对象缓存
+    } catch {}
+  }
   return JSON.parse(JSON.stringify(DEFAULT));
 }
 
@@ -788,7 +793,8 @@ async function persistContent(data) {
 /* 当前内容的内存缓存（init 后填入，避免每次保存都重新请求） */
 let _content = null;
 function getContent() {
-  return _content || JSON.parse(JSON.stringify(DEFAULT));
+  if (_content && Object.keys(_content).length > 0) return _content;
+  return JSON.parse(JSON.stringify(DEFAULT));
 }
 
 /* ── Auth ── */

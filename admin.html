@@ -676,6 +676,10 @@
 <script>
 'use strict';
 
+/* ── Supabase 配置（填入你自己的值） ── */
+const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
+const SUPABASE_KEY = 'YOUR_ANON_KEY';
+
 /* ── Constants ── */
 const STORAGE_KEY = 'nova_cms';
 const AUTH_KEY    = 'nova_cms_auth';
@@ -727,16 +731,62 @@ const DEFAULT = {
 };
 
 /* ── Helpers ── */
-function getContent() {
-  const s = localStorage.getItem(STORAGE_KEY);
-  return s ? JSON.parse(s) : JSON.parse(JSON.stringify(DEFAULT));
-}
-function saveContent(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-}
 const $ = id => document.getElementById(id);
 const val = id => { const el = $(id); return el ? el.value.trim() : ''; };
 const setVal = (id, v) => { const el = $(id); if (el && v !== undefined && v !== null) el.value = v; };
+
+/* 将 saved 中存在的 key 合并进 defaults（浅合并，保证所有字段都有值） */
+function mergeWithDefault(defaults, saved) {
+  const result = JSON.parse(JSON.stringify(defaults));
+  for (const key of Object.keys(saved)) {
+    if (key in result) result[key] = saved[key];
+  }
+  return result;
+}
+
+/* 从 Supabase 加载内容，失败则降级到 localStorage，再失败则用 DEFAULT */
+async function loadContent() {
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/site_content?id=eq.1&select=content`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    if (rows?.[0]?.content && Object.keys(rows[0].content).length > 0) {
+      const remote = mergeWithDefault(DEFAULT, rows[0].content);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(remote)); // 本地缓存
+      return remote;
+    }
+  } catch { /* 网络异常，降级 */ }
+  // 降级到 localStorage
+  const cached = localStorage.getItem(STORAGE_KEY);
+  if (cached) { try { return JSON.parse(cached); } catch {} }
+  return JSON.parse(JSON.stringify(DEFAULT));
+}
+
+/* 保存到 Supabase，同时更新 localStorage 缓存 */
+async function persistContent(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/site_content`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ id: 1, content: data, updated_at: new Date().toISOString() }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+
+/* 当前内容的内存缓存（init 后填入，避免每次保存都重新请求） */
+let _content = null;
+function getContent() {
+  return _content || JSON.parse(JSON.stringify(DEFAULT));
+}
 
 /* ── Auth ── */
 function isLoggedIn() { return sessionStorage.getItem(AUTH_KEY) === '1'; }
@@ -944,7 +994,7 @@ function populateForms(c) {
 }
 
 /* ── Section save functions ── */
-function saveSection(section) {
+async function saveSection(section) {
   const c = getContent();
   switch (section) {
     case 'nav':
@@ -1013,29 +1063,34 @@ function saveSection(section) {
       c.footer.company = val('footer-company');
       break;
   }
-  saveContent(c);
-  flashSaved(section);
+  _content = c;
+  const ok = await persistContent(c);
+  flashSaved(section, ok);
 }
 
-function flashSaved(section) {
+function flashSaved(section, ok = true) {
   const el = document.getElementById('save-' + section);
   if (!el) return;
+  el.textContent = ok ? '✓ 已保存到云端' : '✓ 已保存（本地缓存，网络异常）';
+  el.style.color  = ok ? '#4ade80' : '#fb923c';
   el.classList.add('visible');
-  setTimeout(() => el.classList.remove('visible'), 2500);
+  setTimeout(() => el.classList.remove('visible'), 3000);
 }
 
 /* ── Reset all ── */
-function resetAll() {
+async function resetAll() {
   if (!confirm('确定要重置所有内容为默认值吗？此操作不可撤销。')) return;
-  localStorage.removeItem(STORAGE_KEY);
-  populateForms(JSON.parse(JSON.stringify(DEFAULT)));
-  alert('内容已重置为默认值，刷新预览网站即可生效。');
+  const def = JSON.parse(JSON.stringify(DEFAULT));
+  _content = def;
+  await persistContent(def);
+  populateForms(def);
+  alert('内容已重置为默认值。');
 }
 
 /* ── Init ── */
-function initCMS() {
-  const content = getContent();
-  populateForms(content);
+async function initCMS() {
+  _content = await loadContent();
+  populateForms(_content);
 }
 
 /* ── Boot ── */

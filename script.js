@@ -4,12 +4,35 @@
 
 'use strict';
 
-/* ---------- CMS: apply saved content from admin panel ---------- */
-(function applyCMSContent() {
-  const saved = localStorage.getItem('nova_cms');
-  if (!saved) return;
+/* ---------- Supabase 配置（与 admin.html 保持一致） ---------- */
+const SUPABASE_URL = 'https://ujerbbtirmforrynkrpo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QmyBWeu-VWKoGxjyzjNxtg_6XHzO13_';
+
+/* ---------- CMS: 从 Supabase 读取内容并应用到页面 ---------- */
+(async function applyCMSContent() {
+  let c = null;
+
+  // 优先从 Supabase 读取
   try {
-    const c = JSON.parse(saved);
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/site_content?id=eq.1&select=content`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    );
+    const rows = await res.json();
+    if (rows?.[0]?.content && Object.keys(rows[0].content).length > 0) {
+      c = rows[0].content;
+      localStorage.setItem('nova_cms', JSON.stringify(c)); // 更新本地缓存
+    }
+  } catch { /* 网络异常，降级到 localStorage */ }
+
+  // 降级：读 localStorage 缓存
+  if (!c) {
+    const saved = localStorage.getItem('nova_cms');
+    if (!saved) return;
+    try { c = JSON.parse(saved); } catch { return; }
+  }
+
+  try {
     const q  = s => document.querySelector(s);
     const qa = s => document.querySelectorAll(s);
 
@@ -133,7 +156,7 @@
           `© ${c.footer.year || '2026'} ${c.footer.company || 'Nova Brand'}. 保留所有权利。`;
     }
 
-  } catch (e) { /* silent fail */ }
+  } catch { /* silent fail */ }
 })();
 
 /* ---------- Nav: add .scrolled class on scroll ---------- */

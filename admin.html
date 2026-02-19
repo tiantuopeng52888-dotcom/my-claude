@@ -239,6 +239,24 @@
 
     /* Saved indicator */
     .save-msg.visible { display: inline; }
+
+    /* Work CRUD */
+    .work-add-btn {
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      width: 100%; margin-top: 14px; padding: 10px;
+      background: rgba(220,38,38,0.07); border: 1px dashed rgba(220,38,38,0.35);
+      border-radius: var(--radius); color: var(--red);
+      font-size: 13px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .work-add-btn:hover { background: rgba(220,38,38,0.15); border-style: solid; }
+    .item-del-btn {
+      margin-left: auto; padding: 2px 9px; border-radius: 5px;
+      background: rgba(220,38,38,0.1); border: 1px solid rgba(220,38,38,0.25);
+      color: #f87171; font-size: 11px; font-weight: 600; cursor: pointer;
+      transition: all 0.15s; line-height: 1.6;
+    }
+    .item-del-btn:hover { background: rgba(220,38,38,0.25); color: #fff; }
   </style>
 </head>
 <body>
@@ -541,8 +559,9 @@
         <div class="cms-section" id="section-work">
           <div class="form-card">
             <div class="form-card-title">精选案例</div>
-            <div class="form-card-sub">3 个作品展示卡片</div>
+            <div class="form-card-sub">作品展示卡片（可新增、编辑、删除）</div>
             <div id="work-repeater" style="display:flex;flex-direction:column;gap:14px;"></div>
+            <button class="work-add-btn" onclick="addWorkItem()">＋ 新增案例</button>
             <div class="save-row">
               <button class="save-btn" onclick="saveSection('work')">保存精选案例</button>
               <span class="save-msg" id="save-work">✓ 已保存</span>
@@ -792,21 +811,64 @@ function buildServicesRepeater(services) {
   `).join('');
 }
 
+/* HTML 属性值转义，防止引号破坏结构 */
+function escAttr(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+}
+
 function buildWorkRepeater(work) {
   const container = $('work-repeater');
+  const canDelete = work.length > 1;
   container.innerHTML = work.map((w, i) => `
     <div class="repeater-item">
-      <div class="repeater-item-header"><span>${i+1}</span> 案例 ${i+1}</div>
+      <div class="repeater-item-header">
+        <span>${i+1}</span> 案例 ${i+1}
+        ${canDelete ? `<button class="item-del-btn" onclick="deleteWorkItem(${i})">✕ 删除</button>` : ''}
+      </div>
       <div class="ri-fields">
         <div class="form-group"><label>标签</label>
-          <input type="text" id="work-tag-${i}" value="${w.tag}" /></div>
+          <input type="text" id="work-tag-${i}" value="${escAttr(w.tag)}" /></div>
         <div class="form-group"><label>标题</label>
-          <input type="text" id="work-title-${i}" value="${w.title}" /></div>
+          <input type="text" id="work-title-${i}" value="${escAttr(w.title)}" /></div>
         <div class="form-group"><label>描述</label>
-          <input type="text" id="work-desc-${i}" value="${w.desc}" /></div>
+          <input type="text" id="work-desc-${i}" value="${escAttr(w.desc)}" /></div>
       </div>
     </div>
   `).join('');
+}
+
+/* 读取当前 DOM 中所有案例的值 */
+function getWorkItemsFromDOM() {
+  const items = [];
+  let i = 0;
+  while (document.getElementById(`work-tag-${i}`)) {
+    items.push({
+      tag:   document.getElementById(`work-tag-${i}`).value.trim(),
+      title: document.getElementById(`work-title-${i}`).value.trim(),
+      desc:  document.getElementById(`work-desc-${i}`).value.trim(),
+    });
+    i++;
+  }
+  return items;
+}
+
+/* 新增一条空案例 */
+function addWorkItem() {
+  const current = getWorkItemsFromDOM();
+  current.push({ tag: '', title: '', desc: '' });
+  buildWorkRepeater(current);
+  // 滚动到新条目
+  const last = $('work-repeater').lastElementChild;
+  if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  last?.querySelector('input')?.focus();
+}
+
+/* 删除指定索引的案例 */
+function deleteWorkItem(index) {
+  const current = getWorkItemsFromDOM();
+  if (current.length <= 1) return; // 至少保留一条，按钮已隐藏但做双重保护
+  current.splice(index, 1);
+  buildWorkRepeater(current);
 }
 
 function buildTestimonialsRepeater(testimonials) {
@@ -923,11 +985,7 @@ function saveSection(section) {
       }));
       break;
     case 'work':
-      c.work = c.work.map((_, i) => ({
-        tag:   document.getElementById(`work-tag-${i}`)?.value.trim()   || '',
-        title: document.getElementById(`work-title-${i}`)?.value.trim() || '',
-        desc:  document.getElementById(`work-desc-${i}`)?.value.trim()  || '',
-      }));
+      c.work = getWorkItemsFromDOM();
       break;
     case 'testimonials':
       c.testimonials = c.testimonials.map((_, i) => ({

@@ -5,8 +5,8 @@
 'use strict';
 
 /* ---------- Supabase 配置（与 admin.html 保持一致） ---------- */
-const SUPABASE_URL = 'https://YOUR_PROJECT_ID.supabase.co';
-const SUPABASE_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL = 'https://ujerbbtirmforrynkrpo.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_QmyBWeu-VWKoGxjyzjNxtg_6XHzO13_';
 
 /* ---------- CMS: 从 Supabase 读取内容并应用到页面 ---------- */
 (async function applyCMSContent() {

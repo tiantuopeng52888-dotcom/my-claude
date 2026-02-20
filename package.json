@@ -1,0 +1,14 @@
+{
+  "name": "nova-brand-website",
+  "version": "1.0.0",
+  "description": "NOVA 品牌官网 + CMS 管理后台",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.0",
+    "serve": "^14.2.0"
+  }
+}

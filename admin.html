@@ -425,7 +425,7 @@
             <div class="form-grid cols-1">
               <div class="form-group">
                 <label>徽章文字（Badge）</label>
-                <input type="text" id="hero-badge" placeholder="🎊 马年大吉 · 2026 新春纳福" />
+                <input type="text" id="hero-badge" placeholder="✦ 品牌战略 · 视觉创新 · 数字体验" />
               </div>
               <div class="form-group">
                 <label>主标题第一行</label>
@@ -921,7 +921,7 @@ function addWorkItem() {
   buildWorkRepeater(current);
   // 滚动到新条目
   const last = $('work-repeater').lastElementChild;
-  if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (last) last.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
   last?.querySelector('input')?.focus();
 }
 

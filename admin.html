@@ -925,7 +925,7 @@ function addWorkItem() {
   buildWorkRepeater(current);
   // 滚动到新条目
   const last = $('work-repeater').lastElementChild;
-  if (last) last.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  if (last) last.scrollIntoView?.({ behavior: 'smooth', block: 'nearest' });
   last?.querySelector('input')?.focus();
 }
 

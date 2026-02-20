@@ -92,6 +92,12 @@ const SUPABASE_KEY = 'sb_publishable_QmyBWeu-VWKoGxjyzjNxtg_6XHzO13_';
             <p>${s.desc}</p>
             <a href="#" class="service-link">了解详情 →</a>
           </div>`).join('');
+        // Re-apply reveal animations to newly rendered cards
+        grid.querySelectorAll('.service-card').forEach((el, i) => {
+          el.classList.add('reveal');
+          el.style.transitionDelay = `${i * 60}ms`;
+          observer.observe(el);
+        });
       }
     }
 
@@ -273,7 +279,9 @@ if (form) {
 /* ---------- Smooth scroll for anchor links ---------- */
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   anchor.addEventListener('click', function (e) {
-    const target = document.querySelector(this.getAttribute('href'));
+    const href = this.getAttribute('href');
+    if (href === '#') return; // bare # links: no scroll, no error
+    const target = document.querySelector(href);
     if (target) {
       e.preventDefault();
       const offset = 80; // nav height

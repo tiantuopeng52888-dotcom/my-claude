@@ -425,7 +425,7 @@
             <div class="form-grid cols-1">
               <div class="form-group">
                 <label>徽章文字（Badge）</label>
-                <input type="text" id="hero-badge" placeholder="🎊 马年大吉 · 2026 新春纳福" />
+                <input type="text" id="hero-badge" placeholder="✦ 品牌战略 · 视觉创新 · 数字体验" />
               </div>
               <div class="form-group">
                 <label>主标题第一行</label>
@@ -860,19 +860,23 @@ function buildServicesRepeater(services) {
       <div class="repeater-item-header"><span>${i+1}</span> 服务 ${i+1}</div>
       <div class="ri-fields">
         <div class="form-group"><label>图标符号</label>
-          <input type="text" id="svc-icon-${i}" value="${s.icon}" maxlength="4" /></div>
+          <input type="text" id="svc-icon-${i}" value="${escAttr(s.icon)}" maxlength="4" /></div>
         <div class="form-group"><label>标题</label>
-          <input type="text" id="svc-title-${i}" value="${s.title}" /></div>
+          <input type="text" id="svc-title-${i}" value="${escAttr(s.title)}" /></div>
         <div class="form-group"><label>描述</label>
-          <textarea id="svc-desc-${i}" rows="3">${s.desc}</textarea></div>
+          <textarea id="svc-desc-${i}" rows="3">${escAttr(s.desc)}</textarea></div>
       </div>
     </div>
   `).join('');
 }
 
-/* HTML 属性值转义，防止引号破坏结构 */
+/* HTML 转义（属性值与文本内容通用） */
 function escAttr(str) {
-  return String(str || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function buildWorkRepeater(work) {
@@ -940,14 +944,14 @@ function buildTestimonialsRepeater(testimonials) {
       <div class="repeater-item-header"><span>${i+1}</span> 评价 ${i+1}</div>
       <div class="ri-fields">
         <div class="form-group"><label>评价内容</label>
-          <textarea id="testi-text-${i}" rows="4">${t.text}</textarea></div>
+          <textarea id="testi-text-${i}" rows="4">${escAttr(t.text)}</textarea></div>
         <div class="form-grid" style="gap:10px">
           <div class="form-group"><label>姓名</label>
-            <input type="text" id="testi-author-${i}" value="${t.author}" /></div>
+            <input type="text" id="testi-author-${i}" value="${escAttr(t.author)}" /></div>
           <div class="form-group"><label>职位/公司</label>
-            <input type="text" id="testi-role-${i}" value="${t.role}" /></div>
+            <input type="text" id="testi-role-${i}" value="${escAttr(t.role)}" /></div>
           <div class="form-group"><label>头像字母</label>
-            <input type="text" id="testi-initial-${i}" value="${t.initial}" maxlength="2" /></div>
+            <input type="text" id="testi-initial-${i}" value="${escAttr(t.initial)}" maxlength="2" /></div>
         </div>
       </div>
     </div>
